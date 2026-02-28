@@ -30,8 +30,4 @@ public enum ConfigChangeExecuteTypes {
      * Execute after pointcut.
      */
     EXECUTE_AFTER_TYPE;
-    
-    public boolean equals(ConfigChangeExecuteTypes configChangeExecuteTypes) {
-        return this.compareTo(configChangeExecuteTypes) == 0;
-    }
 }
