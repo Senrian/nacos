@@ -114,7 +114,6 @@ public class ConfigMigrateService {
      */
     NamespacePersistService namespacePersistService;
     
-    
     /**
      * The Old table version.
      */
@@ -341,7 +340,7 @@ public class ConfigMigrateService {
                             changedConfigInfoGrayWrapper.getGroup(), tenant, changedConfigInfoGrayWrapper.getGrayName(),
                             null, NAMESPACE_MIGRATE_SRC_USER);
                 } else if (!targetConfigInfoGrayWrapper.getMd5().equals(changedConfigInfoGrayWrapper.getMd5())
-                        || targetConfigInfoGrayWrapper.getGrayRule()
+                        || !targetConfigInfoGrayWrapper.getGrayRule()
                         .equals(changedConfigInfoGrayWrapper.getGrayRule())) {
                     if (targetConfigInfoGrayWrapper.getLastModified() >= changedConfigInfoGrayWrapper.getLastModified()
                             || !StringUtils.equals(targetConfigInfoGrayWrapper.getSrcUser(),
@@ -359,7 +358,7 @@ public class ConfigMigrateService {
                             changedConfigInfoGrayWrapper.getGrayName(), changedConfigInfoGrayWrapper.getGrayRule(),
                             null, NAMESPACE_MIGRATE_SRC_USER);
                 } else if (!targetConfigInfoGrayWrapper.getMd5().equals(changedConfigInfoGrayWrapper.getMd5())
-                        || targetConfigInfoGrayWrapper.getGrayRule()
+                        || !targetConfigInfoGrayWrapper.getGrayRule()
                         .equals(changedConfigInfoGrayWrapper.getGrayRule())) {
                     if (targetConfigInfoGrayWrapper.getLastModified() >= changedConfigInfoGrayWrapper.getLastModified()
                             && !StringUtils.equals(targetConfigInfoGrayWrapper.getSrcUser(),
@@ -404,7 +403,7 @@ public class ConfigMigrateService {
                 changedConfigInfoStateWrapper.getDataId(), changedConfigInfoStateWrapper.getGroup(), targetTenant);
         try {
             CONFIG_MIGRATE_FLAG.set(true);
-            if (changedConfigAllInfo.getCreateUser().equals(NAMESPACE_MIGRATE_SRC_USER)) {
+            if (NAMESPACE_MIGRATE_SRC_USER.equals(changedConfigAllInfo.getCreateUser())) {
                 if (targetConfigAllInfo == null) {
                     configInfoPersistService.removeConfigInfo(changedConfigAllInfo.getDataId(),
                             changedConfigAllInfo.getGroup(), tenant, null, NAMESPACE_MIGRATE_SRC_USER);
@@ -511,7 +510,6 @@ public class ConfigMigrateService {
         
     }
     
-    @SuppressWarnings("PMD.MethodTooLongRule")
     private void doCheckNamespaceMigrate() throws Exception {
         final long startTime = System.currentTimeMillis();
         int maxNamespaceMigrateRetryTimes = EnvUtil.getProperty("nacos.namespace.migrate.retry.times", Integer.class,
@@ -904,6 +902,33 @@ public class ConfigMigrateService {
     }
     
     /**
+     * Update config metadata migrate.
+     *
+     * @param dataId      the data id
+     * @param group       the group
+     * @param namespaceId the namespace id
+     * @param configTags  the config tags
+     * @param description the description
+     * @throws NacosException the nacos exception
+     */
+    public void updateConfigMetadataMigrate(final String dataId,
+            final String group, final String namespaceId, final String configTags, final String description)
+            throws NacosException {
+        if (!StringUtils.equals(namespaceId, namespacePublic) || !ConfigCompatibleConfig.getInstance()
+                .isNamespaceCompatibleMode()) {
+            return;
+        }
+        ConfigOperateResult configOperateResult;
+        configOperateResult = configInfoPersistService.updateConfigInfoMetadata(dataId, group, StringUtils.EMPTY, configTags, description);
+        if (!configOperateResult.isSuccess()) {
+            LOGGER.warn("[update-config-metadata-fail] dataId: {}, group: {}, namespaceId: {}",
+                    dataId, group, namespaceId);
+            throw new NacosApiException(HttpStatus.INTERNAL_SERVER_ERROR.value(), ErrorCode.RESOURCE_CONFLICT,
+                    "update metadata fail.");
+        }
+    }
+    
+    /**
      * Publish config gray migrate.
      *
      * @param grayType          the gray type
@@ -1036,7 +1061,6 @@ public class ConfigMigrateService {
         return configAdvanceInfo;
     }
     
-    @SuppressWarnings("PMD.MethodTooLongRule")
     private void doCheckMigrate() throws Exception {
         
         int migrateMulti = EnvUtil.getProperty("nacos.gray.migrate.executor.multi", Integer.class, Integer.valueOf(4));
