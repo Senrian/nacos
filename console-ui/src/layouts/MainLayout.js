@@ -21,7 +21,7 @@ import PropTypes from 'prop-types';
 import { ConfigProvider, Icon, Menu, Message, Dialog, Badge } from '@alifd/next';
 import Header from './Header';
 import { getState, getNotice, getGuide } from '../reducers/base';
-import getMenuData, { McpServerManagementRoute, McpServerManagementRouteName } from './menu';
+import getMenuData from './menu';
 import './index.scss';
 
 const { SubMenu, Item } = Menu;
@@ -61,16 +61,44 @@ class MainLayout extends React.Component {
     this.props.getNotice();
     this.props.getGuide();
   }
-
+  
+  componentDidUpdate(prevProps) {
+    if (prevProps.language !== this.props.language) {
+      this.props.getNotice();
+    }
+  }
+  
   goBack() {
     this.props.history.goBack();
   }
 
   navTo(url) {
-    const { search } = this.props.location;
-    let urlSearchParams = new URLSearchParams(search);
-    urlSearchParams.set('namespace', window.nownamespace);
-    urlSearchParams.set('namespaceShowName', window.namespaceShowName);
+    // 为不同页面定义需要保留的参数
+    const pageParamMap = {
+      '/configurationManagement': ['namespace', 'namespaceShowName', 'dataId', 'group', 'appName'],
+      '/agentManagement': ['namespace', 'namespaceShowName', 'searchName'],
+      '/mcpServerManagement': ['namespace', 'namespaceShowName'],
+      '/serviceManagement': ['namespace', 'namespaceShowName'],
+    };
+
+    // 获取当前页面需要保留的参数
+    const allowedParams = pageParamMap[url] || ['namespace', 'namespaceShowName'];
+
+    // 创建新的URL参数
+    let urlSearchParams = new URLSearchParams();
+
+    // 只保留允许的参数
+    const currentParams = new URLSearchParams(this.props.location.search);
+    allowedParams.forEach(param => {
+      if (param === 'namespace') {
+        urlSearchParams.set('namespace', window.nownamespace || '');
+      } else if (param === 'namespaceShowName') {
+        urlSearchParams.set('namespaceShowName', window.namespaceShowName || '');
+      } else if (currentParams.has(param)) {
+        urlSearchParams.set(param, currentParams.get(param));
+      }
+    });
+
     this.props.history.push([url, '?', urlSearchParams.toString()].join(''));
   }
 
@@ -177,6 +205,23 @@ class MainLayout extends React.Component {
                               </SubMenu>
                             );
                           }
+                          const itemLabel = subMenu.badge ? (
+                            <span>
+                              <Badge
+                                content={subMenu.badge}
+                                style={{
+                                  backgroundColor: '#FC0E3D',
+                                  color: '#FFFFFF',
+                                  right: '-45px',
+                                  top: '-10px',
+                                }}
+                              >
+                                {locale[subMenu.key]}
+                              </Badge>
+                            </span>
+                          ) : (
+                            locale[subMenu.key]
+                          );
                           return (
                             <Item
                               key={String(idx)}
@@ -185,7 +230,7 @@ class MainLayout extends React.Component {
                                 .join(' ')}
                               onClick={() => this.navTo(subMenu.url)}
                             >
-                              {locale[subMenu.key]}
+                              {itemLabel}
                             </Item>
                           );
                         })}
