@@ -25,10 +25,12 @@ import com.alibaba.nacos.api.remote.request.RequestMeta;
 import com.alibaba.nacos.api.remote.response.ResponseCode;
 import com.alibaba.nacos.auth.annotation.Secured;
 import com.alibaba.nacos.common.notify.NotifyCenter;
+import com.alibaba.nacos.common.utils.StringUtils;
 import com.alibaba.nacos.common.trace.event.naming.SubscribeServiceTraceEvent;
 import com.alibaba.nacos.common.trace.event.naming.UnsubscribeServiceTraceEvent;
 import com.alibaba.nacos.core.context.RequestContextHolder;
 import com.alibaba.nacos.core.control.TpsControl;
+import com.alibaba.nacos.core.namespace.filter.NamespaceValidation;
 import com.alibaba.nacos.core.paramcheck.ExtractorManager;
 import com.alibaba.nacos.core.paramcheck.impl.SubscribeServiceRequestParamExtractor;
 import com.alibaba.nacos.core.remote.RequestHandler;
@@ -65,6 +67,7 @@ public class SubscribeServiceRequestHandler extends RequestHandler<SubscribeServ
     }
     
     @Override
+    @NamespaceValidation
     @TpsControl(pointName = "RemoteNamingServiceSubscribeUnSubscribe", name = "RemoteNamingServiceSubscribeUnsubscribe")
     @Secured(action = ActionTypes.READ)
     @ExtractorManager.Extractor(rpcExtractor = SubscribeServiceRequestParamExtractor.class)
@@ -72,6 +75,13 @@ public class SubscribeServiceRequestHandler extends RequestHandler<SubscribeServ
         String namespaceId = request.getNamespace();
         String serviceName = request.getServiceName();
         String groupName = request.getGroupName();
+        if (StringUtils.isBlank(serviceName)) {
+            throw new NacosException(NacosException.INVALID_PARAM,
+                    "Param 'serviceName' is illegal, serviceName is blank");
+        }
+        if (StringUtils.isBlank(groupName)) {
+            throw new NacosException(NacosException.INVALID_PARAM, "Param 'groupName' is illegal, groupName is blank");
+        }
         String app = RequestContextHolder.getContext().getBasicContext().getApp();
         String groupedServiceName = NamingUtils.getGroupedName(serviceName, groupName);
         Service service = Service.newService(namespaceId, groupName, serviceName, true);

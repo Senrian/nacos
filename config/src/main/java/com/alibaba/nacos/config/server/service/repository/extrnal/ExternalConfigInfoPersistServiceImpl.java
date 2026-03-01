@@ -94,7 +94,7 @@ import static com.alibaba.nacos.config.server.utils.PropertyUtil.CONFIG_MIGRATE_
  *
  * @author lixiaoshuang
  */
-@SuppressWarnings(value = {"PMD.MethodReturnWrapperTypeRule", "checkstyle:linelength"})
+@SuppressWarnings("checkstyle:linelength")
 @Conditional(value = ConditionOnExternalStorage.class)
 @Service("externalConfigInfoPersistServiceImpl")
 public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistService {
@@ -132,6 +132,10 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
     
     @Override
     public String generateLikeArgument(String s) {
+        String underscore = "_";
+        if (s.contains(underscore)) {
+            s = s.replaceAll(underscore, "\\\\_");
+        }
         String fuzzySearchSign = "\\*";
         String sqlLikePercentSign = "%";
         if (s.contains(PATTERN_STR)) {
@@ -163,6 +167,37 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
                     return new ConfigOperateResult(false);
                 }
                 return new ConfigOperateResult(configInfoCurrent.getId(), configInfoCurrent.getLastModified());
+                
+            } catch (CannotGetJdbcConnectionException e) {
+                LogUtil.FATAL_LOG.error("[db-error] " + e, e);
+                throw e;
+            }
+        });
+    }
+    
+    @Override
+    public ConfigOperateResult updateConfigInfoMetadata(final String dataId, final String group, final String tenant,
+            String configTags, String description) throws NacosException {
+        ConfigInfoWrapper configInfoWrapper = findConfigInfo(dataId, group, tenant);
+        if (configInfoWrapper == null) {
+            throw new NacosException(NacosException.NOT_FOUND,
+                    "config is not found for dataId=" + dataId + ", group=" + group);
+        }
+        return tjt.execute(status -> {
+            try {
+                Long configId = configInfoWrapper.getId();
+                if (description != null) {
+                    ConfigInfoMapper configInfoMapper = mapperManager.findMapper(dataSourceService.getDataSourceType(),
+                            TableConstant.CONFIG_INFO);
+                    jt.update(
+                            configInfoMapper.update(Arrays.asList("gmt_modified@NOW()", "c_desc"), Arrays.asList("id")),
+                            description, configId);
+                }
+                if (configTags != null) {
+                    removeTagByIdAtomic(configId);
+                    addConfigTagsRelation(configId, configTags, dataId, group, tenant);
+                }
+                return new ConfigOperateResult(true);
                 
             } catch (CannotGetJdbcConnectionException e) {
                 LogUtil.FATAL_LOG.error("[db-error] " + e, e);
@@ -1092,7 +1127,8 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
                 return configAllInfos;
             }
             for (ConfigAllInfo configAllInfo : configAllInfos) {
-                List<String> configTagList = selectTagByConfig(configAllInfo.getDataId(), configAllInfo.getGroup(), configAllInfo.getTenant());
+                List<String> configTagList = selectTagByConfig(configAllInfo.getDataId(), configAllInfo.getGroup(),
+                        configAllInfo.getTenant());
                 if (CollectionUtils.isNotEmpty(configTagList)) {
                     StringBuilder configTags = new StringBuilder();
                     for (String configTag : configTagList) {
