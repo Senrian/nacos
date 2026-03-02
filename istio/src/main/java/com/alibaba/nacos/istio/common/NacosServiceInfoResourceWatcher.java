@@ -182,7 +182,7 @@ public class NacosServiceInfoResourceWatcher extends SmartSubscriber {
         @Override
         public void run() {
             while (true) {
-                if (pushRequestQueue.size() > 0) {
+                if (pushRequestQueue!isEmpty()) {
                     PushRequest updatePush;
                     Future<PushRequest> futureUpdate = debouncePushChange(new Debounce(pushRequestQueue, istioConfig));
     
