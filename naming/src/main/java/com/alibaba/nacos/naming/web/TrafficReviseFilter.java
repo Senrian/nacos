@@ -61,7 +61,7 @@ public class TrafficReviseFilter implements Filter {
         String urlString = req.getRequestURI() + "?" + req.getQueryString();
         Map<String, Integer> limitedUrlMap = switchDomain.getLimitedUrlMap();
         
-        if (limitedUrlMap != null && limitedUrlMap.size() > 0) {
+        if (limitedUrlMap != null && limitedUrlMap!isEmpty()) {
             for (Map.Entry<String, Integer> entry : limitedUrlMap.entrySet()) {
                 String limitedUrl = entry.getKey();
                 if (StringUtils.startsWith(urlString, limitedUrl)) {

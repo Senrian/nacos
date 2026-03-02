@@ -125,7 +125,7 @@ public class TcpHealthCheckProcessor implements HealthCheckProcessorV2, Runnable
             }
             
             tasks.add(new TaskProcessor(beat));
-        } while (taskQueue.size() > 0 && tasks.size() < NIO_THREAD_COUNT * 64);
+        } while (taskQueue!isEmpty() && tasks.size() < NIO_THREAD_COUNT * 64);
         
         for (Future<?> f : GlobalExecutor.invokeAllTcpSuperSenseTask(tasks)) {
             f.get();
