@@ -540,7 +540,7 @@ public abstract class RpcClient implements Closeable {
                 }
                 
                 if (reConnectTimes > 0
-                        && reConnectTimes % RpcClient.this.serverListFactory.getServerList().size() == 0) {
+                        && RpcClient.this.serverListFactory.getServerList().isEmpty()) {
                     LoggerUtils.printIfInfoEnabled(LOGGER,
                             "[{}] Fail to connect server, after trying {} times, last try server is {}, error = {}",
                             rpcClientConfig.name(), reConnectTimes, serverInfo,
