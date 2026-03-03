@@ -17,6 +17,7 @@
 package com.alibaba.nacos.common.cache.decorators;
 
 import com.alibaba.nacos.common.cache.Cache;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -27,6 +28,8 @@ import java.util.concurrent.Callable;
  * @author zzq
  * @date 2021/7/30
  */
+@SuppressFBWarnings(value = "RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT",
+        justification = "LinkedHashMap with accessOrder=true: get() updates LRU access order as side effect")
 public class LruCache<K, V> implements Cache<K, V> {
     
     private final Cache<K, V> delegate;
