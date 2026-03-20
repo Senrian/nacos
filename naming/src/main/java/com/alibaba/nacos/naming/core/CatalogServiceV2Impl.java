@@ -113,11 +113,12 @@ public class CatalogServiceV2Impl implements CatalogService {
             throw new NacosException(NacosException.NOT_FOUND,
                     String.format("service %s@@%s is not found!", groupName, serviceName));
         }
-        if (!serviceStorage.getClusters(service).contains(clusterName)) {
-            throw new NacosException(NacosException.NOT_FOUND, "cluster " + clusterName + " is not found!");
+        String actualCluster = StringUtils.isBlank(clusterName) ? StringUtils.EMPTY : clusterName;
+        if (StringUtils.isNotBlank(actualCluster) && !serviceStorage.getClusters(service).contains(actualCluster)) {
+            throw new NacosException(NacosException.NOT_FOUND, "cluster " + actualCluster + " is not found!");
         }
         ServiceInfo serviceInfo = serviceStorage.getData(service);
-        ServiceInfo result = ServiceUtil.selectInstances(serviceInfo, clusterName);
+        ServiceInfo result = ServiceUtil.selectInstances(serviceInfo, actualCluster);
         return result.getHosts();
     }
     
