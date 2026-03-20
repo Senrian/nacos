@@ -68,9 +68,9 @@ public class InstanceListForm implements NacosForm {
         if (StringUtils.isBlank(groupName)) {
             groupName = Constants.DEFAULT_GROUP;
         }
-        if (StringUtils.isBlank(clusterName)) {
-            clusterName = UtilsAndCommons.DEFAULT_CLUSTER_NAME;
-        }
+        // NOTE: Do NOT fill default value for clusterName when it is blank.
+        // When clusterName is blank, the v3 HTTP API should return all instances (no cluster filter),
+        // which is consistent with gRPC behavior. See issue #14650.
         if (null == healthyOnly) {
             healthyOnly = false;
         }
